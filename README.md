@@ -83,22 +83,24 @@ Press **F12** → Send the detected speech to the local LLM
 
 Example output:
 
+```
 ========== [Question] ==========
 What is Redis?
 
 ========== [Answer] ==========
 Redis is an in-memory key-value database commonly used as a cache or message broker.
+```
 
 ---
 
 # Project Structure
-
+```
 interviewtool
 │
 ├── requirements.txt
 ├── README.md
 └── audio-new.py
-
+```
 ---
 
 # Technologies Used
