@@ -1,0 +1,8 @@
+numpy==2.4.2
+sounddevice==0.5.5
+torch==2.10.0
+webrtcvad==2.0.10
+faster-whisper==1.2.1
+pynput==1.8.1
+rich==14.3.2
+requests==2.32.5
