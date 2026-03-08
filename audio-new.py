@@ -57,31 +57,32 @@ Answer: <the answer>
 # Remote call version (for Ollama/OpenAI API)
 # from openai import OpenAI
 
-# client = OpenAI(
-#     base_url="http://localhost:11434/v1",
-#     api_key="ollama"
-# )
+# def asr_to_answer(asr_raw: str, model: str = MODEL_STRING) -> str:
+#     client = OpenAI(
+#         base_url="http://localhost:11434/v1",
+#         api_key="ollama"
+#     )
 
-# stream = client.chat.completions.create(
-#     model=model,
-#     temperature=0.0,
-#     messages=[
-#         {"role": "system", "content": SYSTEM_PROMPT},
-#         {"role": "user", "content": f"ASR_RAW:\n{asr_raw}\n\nPlease follow the 2 steps."}
-#     ],
-#     stream=True
-# )
+#     stream = client.chat.completions.create(
+#         model=model,
+#         temperature=0.0,
+#         messages=[
+#             {"role": "system", "content": SYSTEM_PROMPT},
+#             {"role": "user", "content": f"ASR_RAW:\n{asr_raw}\n\nPlease follow the 2 steps."}
+#         ],
+#         stream=True
+#     )
 
-# answer = ""
+#     answer = ""
 
-# for chunk in stream:
-#     delta = chunk.choices[0].delta
-#     if delta.content:
-#         print(delta.content, end="", flush=True)   
-#         answer += delta.content
+#     for chunk in stream:
+#         delta = chunk.choices[0].delta
+#         if delta.content:
+#             print(delta.content, end="", flush=True)   
+#             answer += delta.content
 
-# print() 
-# return answer
+#     print() 
+#     return answer
 
 
 def asr_to_answer(asr_raw: str, model: str = MODEL_STRING) -> str:
