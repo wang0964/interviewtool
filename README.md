@@ -127,11 +127,18 @@ interviewtool
 # Requirements
 
 - Python 3.10+
-- GPU recommended (RTX series, VRAM >= 8Gb)
+- GPU recommended (RTX series, VRAM ≥ 8Gb)
 - Ollama installed
-- RAM >= 16Gb
+- RAM ≥ 16Gb
 
 ---
+
+# Tested Environment
+
+- GPU: NVIDIA RTX 3070 (8GB VRAM)
+- RAM: 64 GB
+- Python: 3.13
+- OS: Windows 11
 
 # License
 
