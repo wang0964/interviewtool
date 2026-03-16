@@ -51,6 +51,7 @@ Recommended models:
 - qwen3.5:9b  
 - qwen2.5:7b  
 - phi3:mini  
+- Qwen3-235B-A22B-Instruct (remote, iflow)
 
 Install models:
 
