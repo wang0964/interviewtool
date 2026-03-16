@@ -22,6 +22,7 @@ MODEL_STRING = 'qwen3.5:9b'
 # MODEL_STRING = 'qwen2.5:7b'
 # MODEL_STRING = 'phi3:mini'
 
+API_KEY="sk-d860607e05f4cffb53b189c16b015142"
 
 SYSTEM_PROMPT = """You will receive a noisy ASR transcript. It may contain:
 - wrong punctuation, repetitions, omissions, homophones
@@ -36,8 +37,9 @@ Step 1 (Repair)
 - Re-segment sentences clearly
 - Preserve proper nouns, numbers, and acronyms
 - If unsure, keep the original wording instead of guessing
+- Do not show your reasoning, only output the final answer.
 
-Do not output for Step 1:
+Output for Step 1:
 Cleaned Transcript: <cleaned transcript only>
 
 Step 2 (Interpret & Answer)
@@ -54,82 +56,118 @@ Output for Step 2:
 Answer: <the answer>
 """
 
-# Remote call version (for Ollama/OpenAI API)
-# from openai import OpenAI
+def asr_to_answer(
+    asr_raw: str,
+    model: str,
+    url: str,
+    api_key: str | None = None
+) -> str:
 
-# def asr_to_answer(asr_raw: str, model: str = MODEL_STRING) -> str:
-#     client = OpenAI(
-#         base_url="http://localhost:11434/v1",
-#         api_key="ollama"
-#     )
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"ASR_RAW:\n{asr_raw}\n\nPlease follow the 2 steps."}
+    ]
 
-#     stream = client.chat.completions.create(
-#         model=model,
-#         temperature=0.0,
-#         messages=[
-#             {"role": "system", "content": SYSTEM_PROMPT},
-#             {"role": "user", "content": f"ASR_RAW:\n{asr_raw}\n\nPlease follow the 2 steps."}
-#         ],
-#         stream=True
-#     )
+    is_local = ("localhost" in url) or ("127.0.0.1" in url)
 
-#     answer = ""
-
-#     for chunk in stream:
-#         delta = chunk.choices[0].delta
-#         if delta.content:
-#             print(delta.content, end="", flush=True)   
-#             answer += delta.content
-
-#     print() 
-#     return answer
-
-
-def asr_to_answer(asr_raw: str, model: str = MODEL_STRING) -> str:
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"ASR_RAW:\n{asr_raw}\n\nPlease follow the 2 steps."}
-        ],
-        "stream": True,
-        "keep_alive": "30m",
-        "options": {
-            "temperature": 0.0
-        }
-    }
-    
-    if MODEL_STRING in WITHOUT_THINK:
-        payload['think'] = False
-    
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
 
     answer_parts = []
 
-    with requests.post(
-        "http://localhost:11434/api/chat",
-        json=payload,
-        stream=True,
-        timeout=600
-    ) as r:
-        r.raise_for_status()
+    if is_local:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "keep_alive": "30m",
+            "options": {
+                "temperature": 0.0
+            }
+        }
 
-        for line in r.iter_lines():
-            if not line:
-                continue
+        with requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            stream=True,
+            timeout=600
+        ) as r:
+            r.raise_for_status()
 
-            chunk = json.loads(line)
-            message = chunk.get("message", {})
-            content = message.get("content", "")
+            for line in r.iter_lines():
+                if not line:
+                    continue
 
-            if content:
-                print(content, end="", flush=True)
-                answer_parts.append(content)
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
 
-            if chunk.get("done", False):
-                break
+                message = chunk.get("message", {})
+                content = message.get("content", "")
+
+                if content:
+                    print(content, end="", flush=True)
+                    answer_parts.append(content)
+
+                if chunk.get("done", False):
+                    break
+
+    else:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.0,
+            "stream": True
+        }
+
+        with requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            stream=True,
+            timeout=600
+        ) as r:
+            r.raise_for_status()
+
+            for raw_line in r.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+
+                line = raw_line.strip()
+
+                if line.startswith("data:"):
+                    line = line[5:].strip()
+
+                if not line or line == "[DONE]":
+                    break
+
+                if line.startswith("event:"):
+                    continue
+
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                choices = chunk.get("choices", [])
+                if not choices:
+                    continue
+
+                delta = choices[0].get("delta", {})
+                content = delta.get("content", "")
+
+                if content:
+                    print(content, end="", flush=True)
+                    answer_parts.append(content)
 
     print()
-    return "".join(answer_parts)
+    return "".join(answer_parts).strip()
+
+
+
 
 
 class TranscriptBuffer:
@@ -164,7 +202,17 @@ def start_listener(get_text_fn):
                 print(f'{text}' if text else "(empty)")
                 print("========== [Answer] ==========\n")
                 if text:
-                    asr_to_answer(text)
+                    # asr_to_answer(asr_raw=text, 
+                    #               model=MODEL_STRING, 
+                    #               url="http://localhost:11434/api/chat",
+                    #               api_key="ollama"
+                    # )
+                    asr_to_answer(
+                        asr_raw=text,
+                        model="Qwen3-235B-A22B-Instruct",
+                        url="https://apis.iflow.cn/v1/chat/completions",
+                        api_key=API_KEY
+                    )
         except Exception as e:
             print("F12 listener error:", e)
 
