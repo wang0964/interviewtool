@@ -38,9 +38,9 @@ Generate Answer
 
 ---
 
-# Local LLM
+# Local & Remote LLMs
 
-This project uses **Ollama** to run local language models.
+This project uses **Ollama** to run local language models, and can invoke remote LLMs with OpenAI interface also.
 
 Install Ollama:
 
@@ -51,7 +51,7 @@ Recommended models:
 - qwen3.5:9b  
 - qwen2.5:7b  
 - phi3:mini  
-- Qwen3-235B-A22B-Instruct (remote, iflow)
+- Qwen3-235B-A22B-Instruct (remote, provider: iflow)
 
 Install models:
 
